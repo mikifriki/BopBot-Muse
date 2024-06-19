@@ -5,7 +5,6 @@ export const TYPES = {
   Client: Symbol('Client'),
   Config: Symbol('Config'),
   Command: Symbol('Command'),
-  ThirdParty: Symbol('ThirdParty'),
   Managers: {
     Player: Symbol('PlayerManager'),
   },

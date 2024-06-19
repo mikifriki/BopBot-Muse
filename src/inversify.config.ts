@@ -91,8 +91,6 @@ container.bind<YoutubeAPI>(TYPES.Services.YoutubeAPI).to(YoutubeAPI).inSingleton
 // Config values
 container.bind(TYPES.Config).toConstantValue(new ConfigProvider());
 
-// Static libraries
-container.bind(TYPES.ThirdParty).to(ThirdParty);
 
 container.bind(TYPES.FileCache).to(FileCacheProvider);
 container.bind(TYPES.KeyValueCache).to(KeyValueCacheProvider);
