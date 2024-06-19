@@ -2,11 +2,10 @@ import {AutocompleteInteraction, ChatInputCommandInteraction} from 'discord.js';
 import {URL} from 'url';
 import {SlashCommandBuilder} from '@discordjs/builders';
 import {inject, injectable} from 'inversify';
-import Spotify from 'spotify-web-api-node';
 import Command from './index.js';
 import {TYPES} from '../types.js';
 import ThirdParty from '../services/third-party.js';
-import getYouTubeAndSpotifySuggestionsFor from '../utils/get-youtube-and-spotify-suggestions-for.js';
+import getYouTubeSuggestionsFor from '../utils/get-youtube-suggestions-for.js';
 import KeyValueCacheProvider from '../services/key-value-cache.js';
 import {ONE_HOUR_IN_SECONDS} from '../utils/constants.js';
 import AddQueryToQueue from '../services/add-query-to-queue.js';
@@ -18,7 +17,7 @@ export default class implements Command {
     .setDescription('play a song')
     .addStringOption(option => option
       .setName('query')
-      .setDescription('YouTube URL, Spotify URL, or search query')
+      .setDescription('YouTube URL or search query')
       .setAutocomplete(true)
       .setRequired(true))
     .addBooleanOption(option => option
@@ -36,12 +35,10 @@ export default class implements Command {
 
   public requiresVC = true;
 
-  private readonly spotify: Spotify;
   private readonly cache: KeyValueCacheProvider;
   private readonly addQueryToQueue: AddQueryToQueue;
 
   constructor(@inject(TYPES.ThirdParty) thirdParty: ThirdParty, @inject(TYPES.KeyValueCache) cache: KeyValueCacheProvider, @inject(TYPES.Services.AddQueryToQueue) addQueryToQueue: AddQueryToQueue) {
-    this.spotify = thirdParty.spotify;
     this.cache = cache;
     this.addQueryToQueue = addQueryToQueue;
   }
@@ -76,9 +73,8 @@ export default class implements Command {
     } catch {}
 
     const suggestions = await this.cache.wrap(
-      getYouTubeAndSpotifySuggestionsFor,
+      getYouTubeSuggestionsFor,
       query,
-      this.spotify,
       10,
       {
         expiresIn: ONE_HOUR_IN_SECONDS,

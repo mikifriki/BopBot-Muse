@@ -13,6 +13,5 @@ export const TYPES = {
     AddQueryToQueue: Symbol('AddQueryToQueue'),
     GetSongs: Symbol('GetSongs'),
     YoutubeAPI: Symbol('YoutubeAPI'),
-    SpotifyAPI: Symbol('SpotifyAPI'),
   },
 };
