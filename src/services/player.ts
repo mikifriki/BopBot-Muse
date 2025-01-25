@@ -20,7 +20,6 @@ import FileCacheProvider from './file-cache.js';
 import debug from '../utils/debug.js';
 import {getGuildSettings} from '../utils/get-guild-settings.js';
 import {buildPlayingMessageEmbed} from '../utils/build-embed.js';
-import {Setting} from '@prisma/client';
 
 export enum MediaSource {
   Youtube,
@@ -83,8 +82,6 @@ export default class {
   private readonly fileCache: FileCacheProvider;
   private disconnectTimer: NodeJS.Timeout | null = null;
 
-  private readonly channelToSpeakingUsers: Map<string, Set<string>> = new Map();
-
   constructor(fileCache: FileCacheProvider, guildId: string) {
     this.fileCache = fileCache;
     this.guildId = guildId;
@@ -103,8 +100,6 @@ export default class {
       adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator,
     });
 
-    const guildSettings = await getGuildSettings(this.guildId);
-
     // Workaround to disable keepAlive
     this.voiceConnection.on('stateChange', (oldState, newState) => {
       /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
@@ -121,9 +116,6 @@ export default class {
       /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 
       this.currentChannel = channel;
-      if (newState.status === VoiceConnectionStatus.Ready) {
-        this.registerVoiceActivityListener(guildSettings);
-      }
     });
   }
 
@@ -311,63 +303,6 @@ export default class {
     }
   }
 
-  registerVoiceActivityListener(guildSettings: Setting) {
-    const {turnDownVolumeWhenPeopleSpeak, turnDownVolumeWhenPeopleSpeakTarget} = guildSettings;
-    if (!turnDownVolumeWhenPeopleSpeak || !this.voiceConnection) {
-      return;
-    }
-
-    this.voiceConnection.receiver.speaking.on('start', (userId: string) => {
-      if (!this.currentChannel) {
-        return;
-      }
-
-      const member = this.currentChannel.members.get(userId);
-      const channelId = this.currentChannel?.id;
-
-      if (member) {
-        if (!this.channelToSpeakingUsers.has(channelId)) {
-          this.channelToSpeakingUsers.set(channelId, new Set());
-        }
-
-        this.channelToSpeakingUsers.get(channelId)?.add(member.id);
-      }
-
-      this.suppressVoiceWhenPeopleAreSpeaking(turnDownVolumeWhenPeopleSpeakTarget);
-    });
-
-    this.voiceConnection.receiver.speaking.on('end', (userId: string) => {
-      if (!this.currentChannel) {
-        return;
-      }
-
-      const member = this.currentChannel.members.get(userId);
-      const channelId = this.currentChannel.id;
-      if (member) {
-        if (!this.channelToSpeakingUsers.has(channelId)) {
-          this.channelToSpeakingUsers.set(channelId, new Set());
-        }
-
-        this.channelToSpeakingUsers.get(channelId)?.delete(member.id);
-      }
-
-      this.suppressVoiceWhenPeopleAreSpeaking(turnDownVolumeWhenPeopleSpeakTarget);
-    });
-  }
-
-  suppressVoiceWhenPeopleAreSpeaking(turnDownVolumeWhenPeopleSpeakTarget: number): void {
-    if (!this.currentChannel) {
-      return;
-    }
-
-    const speakingUsers = this.channelToSpeakingUsers.get(this.currentChannel.id);
-    if (speakingUsers && speakingUsers.size > 0) {
-      this.setVolume(turnDownVolumeWhenPeopleSpeakTarget);
-    } else {
-      this.setVolume(this.defaultVolume);
-    }
-  }
-
   canGoForward(skip: number) {
     return (this.queuePosition + skip - 1) < this.queue.length;
   }
@@ -515,7 +450,7 @@ export default class {
 
     if (!ffmpegInput) {
       // Not yet cached, must download
-      const info = await ytdl.getInfo(song.url, {playerClients: ['WEB_CREATOR', 'IOS']});
+      const info = await ytdl.getInfo(song.url);
 
       const formats = info.formats as YTDLVideoFormat[];
 
@@ -687,9 +622,6 @@ export default class {
           if (!hasReturnedStreamClosed) {
             reject(error);
           }
-        })
-        .on('start', command => {
-          debug(`Spawned ffmpeg with ${command as string}`);
         });
 
       stream.pipe(capacitor);
