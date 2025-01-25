@@ -55,6 +55,9 @@ container.bind<Client>(TYPES.Client).toConstantValue(new Client({intents}));
 // Managers
 container.bind<PlayerManager>(TYPES.Managers.Player).to(PlayerManager).inSingletonScope();
 
+// Config values
+container.bind(TYPES.Config).toConstantValue(new ConfigProvider());
+
 // Services
 container.bind<GetSongs>(TYPES.Services.GetSongs).to(GetSongs).inSingletonScope();
 container.bind<AddQueryToQueue>(TYPES.Services.AddQueryToQueue).to(AddQueryToQueue).inSingletonScope();
@@ -91,7 +94,7 @@ container.bind<YoutubeAPI>(TYPES.Services.YoutubeAPI).to(YoutubeAPI).inSingleton
 // Config values
 container.bind(TYPES.Config).toConstantValue(new ConfigProvider());
 
-
+// Static libraries
 container.bind(TYPES.FileCache).to(FileCacheProvider);
 container.bind(TYPES.KeyValueCache).to(KeyValueCacheProvider);
 

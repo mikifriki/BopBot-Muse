@@ -1,6 +1,4 @@
-/* eslint-disable complexity */
 import {ChatInputCommandInteraction, GuildMember} from 'discord.js';
-import {URL} from 'node:url';
 import {inject, injectable} from 'inversify';
 import shuffle from 'array-shuffle';
 import {TYPES} from '../types.js';
@@ -60,54 +58,7 @@ export default class AddQueryToQueue {
 
     await interaction.deferReply({ephemeral: queueAddResponseEphemeral});
 
-    let newSongs: SongMetadata[] = [];
-    let extraMsg = '';
-
-    // Test if it's a complete URL
-    try {
-      const url = new URL(query);
-
-      const YOUTUBE_HOSTS = [
-        'www.youtube.com',
-        'youtu.be',
-        'youtube.com',
-        'music.youtube.com',
-        'www.music.youtube.com',
-      ];
-
-      if (YOUTUBE_HOSTS.includes(url.host)) {
-        // YouTube source
-        if (url.searchParams.get('list')) {
-          // YouTube playlist
-          newSongs.push(...await this.getSongs.youtubePlaylist(url.searchParams.get('list')!, shouldSplitChapters));
-        } else {
-          const songs = await this.getSongs.youtubeVideo(url.href, shouldSplitChapters);
-
-          if (songs) {
-            newSongs.push(...songs);
-          } else {
-            throw new Error('that doesn\'t exist');
-          }
-        }
-      } else {
-        const song = await this.getSongs.httpLiveStream(query);
-
-        if (song) {
-          newSongs.push(song);
-        } else {
-          throw new Error('that doesn\'t exist');
-        }
-      }
-    } catch (_: unknown) {
-      // Not a URL, must search YouTube
-      const songs = await this.getSongs.youtubeVideoSearch(query, shouldSplitChapters);
-
-      if (songs) {
-        newSongs.push(...songs);
-      } else {
-        throw new Error('that doesn\'t exist');
-      }
-    }
+    let [newSongs, extraMsg] = await this.getSongs.getSongs(query, playlistLimit, shouldSplitChapters);
 
     if (newSongs.length === 0) {
       throw new Error('no songs found');

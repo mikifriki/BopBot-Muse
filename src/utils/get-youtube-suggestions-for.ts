@@ -13,7 +13,7 @@ const getuggestions = async (query: string): Promise<string[]> => {
   return suggestions;
 };
 
-const getYouTubeSuggestionsFor = async (query: string, limit = 10): Promise<APIApplicationCommandOptionChoice[]> => {
+const getYouTubeSuggestionsFor = async (query: string): Promise<APIApplicationCommandOptionChoice[]> => {
   const [youtubeSuggestions] = await Promise.all([
     getuggestions(query),
   ]);
